@@ -1,12 +1,24 @@
-import { prisma } from "@/app/libs/prisma";
+import { prisma } from "@/libs/prisma";
+import { revalidatePath } from "next/cache";
 import Link from "next/link";
 
-export default async function Home() {
+export default async function Page() {
   const products = await prisma.product.findMany({
     include: {
       category: true,
     },
   });
+
+  async function excluir(data: FormData) {
+    "use server";
+
+    await prisma.product.delete({
+      where: {
+        id: Number(data.get("id")),
+      },
+    });
+    revalidatePath("/produtos");
+  }
 
   return (
     <div>
@@ -33,7 +45,12 @@ export default async function Home() {
               <td>R$ {product.price}</td>
               <td>{product.stock}</td>
               <td>{product.category.name}</td>
-              <td>Excluir</td>
+              <td>
+                <form action={excluir}>
+                  <input type="hidden" name="id" value={product.id} />
+                  <button>Excluir</button>
+                </form>
+              </td>
             </tr>
           ))}
         </tbody>
